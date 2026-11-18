@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de usuario</title>
+<style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Georgia, serif; background: #eafaf0; color: #222; padding: 15px; }
+    .titulo { text-align: center; color: #008f5a; border: 1px solid #c8e6c9; border-radius: 10px; padding: 15px; font-size: 32px; letter-spacing: 2px; background: white; margin-bottom: 20px; }
+    .caja { background: white; border: 1px solid #c8e6c9; border-radius: 15px; padding: 20px; max-width: 500px; margin: auto; }
+    .caja h2 { color: #ff6b00; margin: 0 0 10px 0; font-size: 28px; }
+    .caja p { font-family: Arial, sans-serif; font-size: 16px; }
+    label { display: block; color: #008f5a; margin-top: 20px; font-size: 18px; font-weight: bold; }
+    input, textarea { width: 100%; padding: 14px; margin-top: 8px; background: #f2fdf6; border: 1px solid #a5d6a7; border-radius: 8px; color: #222; font-size: 16px; font-family: Arial, sans-serif; }
+    button { margin-top: 25px; background: #ff6b00; color: white; border: none; padding: 14px 22px; border-radius: 8px; font-size: 18px; cursor: pointer; width: 100%; font-weight: bold; }
+    button:disabled { background: #ffaa70; cursor: not-allowed; }
+    .link { display: block; text-align: center; margin-top: 20px; color: #008f5a; text-decoration: none; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
+    .alerta-error { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; padding: 12px; border-radius: 8px; font-family: Arial, sans-serif; margin-top: 15px; display: none; }
+</style>
+</head>
+<body>
+
+<div class="titulo">Registro de usuarios</div>
+
+<div class="caja">
+    <h2>Ingresa tus datos</h2>
+    <p>Te enviaremos un código de verificación a tu correo.</p>
+    
+    <div id="alertaError" class="alerta-error"></div>
+
+    <form id="formularioRegistro">
+        <label>Nombre:</label>
+        <input type="text" id="nombre" required>
+        
+        <label>Apellidos:</label>
+        <input type="text" id="apellidos" required>
+        
+        <label>Correo electrónico:</label>
+        <input type="email" id="correo" required>
+        
+        <label>Contraseña:</label>
+        <input type="password" id="password" required>
+        
+        <label>Mensaje que le quieres enviar:</label>
+        <textarea id="mensaje" rows="4" required placeholder="Escribe aquí tu mensaje..."></textarea>
+        
+        <button type="submit" id="btnEnviar">Enviar datos</button>
+    </form>
+</div>
+
+<a class="link" href="verificar.html">Ya tengo mi código de verificación</a>
+
+<script>
+// ---> PEGA AQUÍ LA URL DE TU APLICACIÓN WEB DE GOOGLE APPS SCRIPT <---
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/TU_ID_AQUI/exec";
+
+document.getElementById('formularioRegistro').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnEnviar');
+    const alerta = document.getElementById('alertaError');
+    
+    alerta.style.display = 'none';
+    btn.innerText = "Enviando código...";
+    btn.disabled = true;
+
+    const nombre = document.getElementById('nombre').value.trim();
+    const apellidos = document.getElementById('apellidos').value.trim();
+    const correo = document.getElementById('correo').value.trim();
+    const mensaje = document.getElementById('mensaje').value.trim();
+
+    // 1. Generar código de 6 dígitos en JavaScript
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 2. Guardar datos y expiración (10 minutos) en sessionStorage
+    const datosVerificacion = {
+        nombre: nombre,
+        apellidos: apellidos,
+        correo: correo,
+        codigo: codigo,
+        expira: Date.now() + (10 * 60 * 1000)
+    };
+    sessionStorage.setItem('verificacion_usuario', JSON.stringify(datosVerificacion));
+
+    try {
+        // 3. Enviar el correo usando Google Apps Script (evita Spam en Gmail)
+        await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                to_email: correo,
+                nombre: nombre,
+                mensaje: mensaje,
+                codigo: codigo
+            })
+        });
+
+        // 4. Redirigir a la pantalla de confirmación
+        window.location.href = 'verificar.html';
+
+    } catch (error) {
+        alerta.innerText = "Ocurrió un error de conexión al enviar el correo.";
+        alerta.style.display = 'block';
+        btn.innerText = "Enviar datos";
+        btn.disabled = false;
+    }
+});
+</script>
+
+</body>
+</html>
